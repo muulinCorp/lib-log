@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -24,7 +23,7 @@ var (
 	}
 )
 
-func (lc *LoggerConf) NewLogger(service, pid string) (Logger, error) {
+func (lc *FluentConf) NewLogger(service, pid string) (Logger, error) {
 	var multi zerolog.LevelWriter
 
 	// init writer
@@ -159,23 +158,16 @@ func (sf *zeroFluent) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-type LogDetail struct {
-	Level   string `mapstructure:"log_level"`
-	Target  string `mapstructure:"log_target"`
+type LogEnv struct {
+	Level   string `mapstructure:"level"`
+	Target  string `mapstructure:"target"`
 }
 
-func (lc *LoggerConf) NewLoggerWithViper(service, pid string) (Logger, error) {
+func (l *LogEnv) NewLogger(service, pid string, fluentConf *FluentConf) (Logger, error) {
 	var multi zerolog.LevelWriter
-	
-	l := &LogDetail{}
-	err := viper.Unmarshal(l)
-	if err != nil {
-		fmt.Println("viper failed to unmarshal LogDetail, err:" + err.Error())
-		fmt.Println("logger auto init with default config {target: os, level: info}")
-	}
 
 	// init writer
-	targetStr := l.Level
+	targetStr := l.Target
 	if targetStr == "" {
 		targetStr = _ENV_VALUE_TARGET_OS
 	}
@@ -186,10 +178,10 @@ func (lc *LoggerConf) NewLoggerWithViper(service, pid string) (Logger, error) {
 		case _ENV_VALUE_TARGET_OS:
 			writers = append(writers, zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 		case _ENV_VALUE_TARGET_FLUENTD:
-			if lc.FluentLog == nil {
+			if fluentConf == nil {
 				return nil, errors.New("config missing fluentlog")
 			}
-			writers = append(writers, newZeroFluent(lc.FluentLog))
+			writers = append(writers, newZeroFluent(fluentConf.FluentLog))
 		}
 	}
 	if len(writers) <= 0 {

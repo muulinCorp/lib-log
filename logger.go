@@ -78,12 +78,12 @@ type LoggerDI interface {
 	NewLoggerWithViper(service, pid string) (Logger, error)
 }
 
-type LoggerConf struct {
+type FluentConf struct {
 	FluentLog *fluentLog `yaml:"fluentd,omitempty" mapstructure:"fluentd,omitempty"`
 }
 
-func NewLogerConfWithFluentd(host string, port int) *LoggerConf {
-	return &LoggerConf{
+func NewLogerConfWithFluentd(host string, port int) *FluentConf {
+	return &FluentConf{
 		FluentLog: &fluentLog{Host: host, Port: port},
 	}
 }
